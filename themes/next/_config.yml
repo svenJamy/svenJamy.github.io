@@ -487,8 +487,8 @@ exturl: false
 
 
 reward_comment: 坚持原创技术分享，您的支持将鼓励我继续创作！
-wechatpay: /images//to/wechat-reward-image.jpg
-alipay: /images//to/alipay-reward-image.jpg
+wechatpay: /images/wechat-reward-image.jpg
+alipay: /images/alipay-reward-image.jpg
 
 #! ---------------------------------------------------------------
 #! DO NOT EDIT THE FOLLOWING SETTINGS
