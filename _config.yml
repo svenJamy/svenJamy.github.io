@@ -65,6 +65,8 @@ pagination_dir: page
 ## Themes: https://hexo.io/themes/
 theme: next
 
+disqus_shortname: jamy_gu
+
 # Content
 excerpt_link: more
 fancybox: true
