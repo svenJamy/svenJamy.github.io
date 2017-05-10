@@ -1,7 +1,7 @@
 ---
 title: swift Sequence及map，flatmap的实现
 date: 2016-09-20 09:40:16
-tags:
+tags: swift
 ---
 
 ## swift Sequence
@@ -157,6 +157,8 @@ public func flatMap<SegmentOfResult : Sequence>(
 第二个实现其实和```Array(s.map(transform).joined())```是一样的，对map后的数组进行```joined```操作。
 
 
+
+文档更新中，写的不足的地方请谅解，您也可以留下您宝贵的意见，谢谢~~~
 
 
 

@@ -1,7 +1,7 @@
 ---
 title: RxSwift系列笔记-入门
 date: 2016-09-24 10:10:36
-tags: RxSwift
+tags: swift
 ---
 
 ## Introduction
@@ -1131,5 +1131,7 @@ print(RxSwift.resourceCount)
  1. Run `carthage build --configuration Debug`.
  2. Build project (**Product** → **Build**).
 ```
+
+文档更新中，写的不足的地方请谅解，您也可以留下您宝贵的意见，谢谢~~~
 
 

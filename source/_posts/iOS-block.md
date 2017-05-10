@@ -1,7 +1,7 @@
 ---
 title: iOS block内部实现分析
 date: 2017-05-08 21:40:16
-tags:
+tags: iOS
 ---
 
 # iOS block
@@ -385,6 +385,8 @@ __strong typeof(var) var = weak_##var; \
 _Pragma("clang diagnostic pop")
 ```
 这个写法就是我们经常使用的形式，当然你也可以不写成宏的形式，和AFN一样在使用的时候手动去写也是可以的。
+
+文档更新中，写的不足的地方请谅解，您也可以留下您宝贵的意见，谢谢~~~
 
 ## 参考文献
 [Blocks Programming Topics](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Blocks/Articles/00_Introduction.html)
