@@ -29,6 +29,7 @@ struct Block_layout {
     // imported variables
 };
 ```
+
 我们可以从上面block的内存布局中看出，`isa`指针会指向`block `所属的类型，用于帮助运行时系统进行处理。第二个变量`flag`的定义如下：
 
 ```

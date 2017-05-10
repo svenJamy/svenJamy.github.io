@@ -66,7 +66,8 @@ CF_EXPORT CFRunLoopRef _CFRunLoopGet0(pthread_t t) {
     return loop;
 }
 ```
-主线程在创建的时候会主动的创建runloop，所以程序启动后就能处理各种事件，不然就直接exit了~~~run loop里面保存了一个全局的字典，用来储存run loop和线程的映射关系。但是如果在非主线程不主动的获取它的话是不会有的。所以我认为应该是如下的关系：有runloop一定有一个线程和它对应，但是有线程（非主线程）的时候不一定有runloop。当一个线程结束的时候，runloop会自动的释放。
+
+主线程在创建的时候会主动的创建runloop，所以程序启动后就能处理各种事件，不然就直接exit了~ run loop里面保存了一个全局的字典，用来储存run loop和线程的映射关系。但是如果在非主线程不主动的获取它的话是不会有的。所以我认为应该是如下的关系：有runloop一定有一个线程和它对应，但是有线程（非主线程）的时候不一定有runloop。当一个线程结束的时候，runloop会自动的释放。
 
 ## Run Loop modes
 
@@ -91,6 +92,7 @@ struct __CFRunLoopMode {
     uint64_t _timerHardDeadline; /* TSR */
 };
 ```
+
 里面包含了source0，source1，timer，observer的数组，也就是说一个run loop mode可以对应多个source事件和time、observer事件。
 run loop一共有5中mode，iOS开发中常用的有下面3中：
 
@@ -512,6 +514,7 @@ static int32_t __CFRunLoopRun(CFRunLoopRef rl, CFRunLoopModeRef rlm, CFTimeInter
     return retVal;
 }
 ```
+
 
 文档更新中，写的不足的地方请谅解，您也可以留下您宝贵的意见，谢谢~~~
 
