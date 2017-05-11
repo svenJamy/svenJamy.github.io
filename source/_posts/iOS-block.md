@@ -14,7 +14,7 @@ tags: iOS
 ### block数据结构
 `block`和大多数OC对象一样，内部实现也是结构体，关于`block`具体实现，可以参考苹果开源代码库([libclosure-65](https://opensource.apple.com/source/libclosure/libclosure-65/runtime.c))。以下是摘录部分主要部分：
 
-```
+```objc
 struct Block_descriptor_1 {
     uintptr_t reserved;
     uintptr_t size;
@@ -32,7 +32,7 @@ struct Block_layout {
 
 我们可以从上面block的内存布局中看出，`isa`指针会指向`block `所属的类型，用于帮助运行时系统进行处理。第二个变量`flag`的定义如下：
 
-```
+```objc
 // Values for Block_layout->flags to describe block objects
 enum {
     BLOCK_DEALLOCATING =      (0x0001),  // runtime
@@ -49,7 +49,7 @@ enum {
 ```
 从[源码](https://opensource.apple.com/source/libclosure/libclosure-65/data.c)我们可以看到`block`主要有以下几种类型定义：
 
-```
+```objc
 void * _NSConcreteStackBlock[32] = { 0 };
 void * _NSConcreteMallocBlock[32] = { 0 };
 void * _NSConcreteAutoBlock[32] = { 0 };
@@ -80,7 +80,7 @@ StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之�
 
 在[CGBlocks_8cpp_source](http://clang.llvm.org/doxygen/CGBlocks_8cpp_source.html#l00326)源码中我们可以看到有如下定义：
 
-```
+```objc
 static void computeBlockInfo(CodeGenModule &CGM, CodeGenFunction *CGF,                              CGBlockInfo &info) {
  ASTContext &C = CGM.getContext();
  const BlockDecl *block = info.getBlockDecl();
@@ -108,7 +108,7 @@ if (!block->hasCaptures()) { // 如果没有捕获外部变量
 
 没有用到外部变量可以理解，但是全局和静态变量为什么也是global的呢？
 
-```
+```objc
 #import <Foundation/Foundation.h>
 
 int globle_int = 10;
@@ -153,7 +153,7 @@ StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之�
 
 `block_copy`具体实现：
 
-```
+```objc
 // Copy, or bump refcount, of a block.  If really copying, call the copy helper if present.
 void *_Block_copy(const void *arg) {
     struct Block_layout *aBlock;
@@ -189,7 +189,7 @@ void *_Block_copy(const void *arg) {
 ## 变量捕获__block
 在平时的使用中我们都知道如果不需要改变外部变量的值的话，在block中是可以直接使用外部变量的，但是如果在block中需要改变外部变量，如果不加上`__block`的话编译器会给我们一个错误的警告`Variable is not assignable(missing __block type specifier)`。我们通过下面2个例子看看其中的缘由，我们新建一个main.m的OC文件，在终端输入以下命令`clang -rewirte-objc main.m`，`clang`会为我们自动生成一个`mian.cpp`的文件：
 
-```
+```objc
 #import <Foundation/Foundation.h>
 
 int globle_int = 10;
@@ -217,7 +217,7 @@ int main(int argc, const char * argv[]) {
 ```
 从结果我们可以看到，全局变量和静态变量在`block`中修改值以后，他们的值确实发生了改变，但是局部变量却不行，我们打开`main.cpp`文件，大约有10W行左右，我们只需要关注最后面就行了：
 
-```
+```objc
 int globle_int = 10;
 
 struct __main_block_impl_0 {
@@ -259,7 +259,7 @@ int main(int argc, const char * argv[]) {
 ```
 我们可以看到，当`block`引用到外部变量的时候，会自动的追加在构造函数中：
 
-```
+```objc
 __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_local_int, int _number, int flags=0) : local_int(_local_int), number(_number) {
     impl.isa = &_NSConcreteStackBlock;
     impl.Flags = flags;
@@ -277,7 +277,7 @@ __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_local_int,
 
 我们来看看加上__block之后的效果：
 
-```
+```objc
 #import <Foundation/Foundation.h>
 
 int globle_int = 10;
@@ -305,7 +305,7 @@ int main(int argc, const char * argv[]) {
 ```
 可以看到局部变量`number`在外部的值也同样改变了，我们通过`clang`查看下具体内部的实现：
 
-```
+```objc
 int globle_int = 10;
 struct __Block_byref_number_0 {
   void *__isa;
@@ -376,7 +376,7 @@ __attribute__((__blocks__(byref))) __Block_byref_number_0 number = {(void*)0,(__
 
 在平时的开发中，我们可能也会遇到循环引用，比如在block中，对象持有block，block里面又直接引用了对象，这样就造成了循环引用。解决的方法都是一样：打破他们之间的持有关系。先列一个大致的实现：
 
-```
+```objc
 #define weakify(var) __weak typeof(var) weak_##var = var;
 
 #define strongify(var) \

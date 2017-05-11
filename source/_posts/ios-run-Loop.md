@@ -4,7 +4,7 @@ date: 2017-05-10 19:00:00
 tags: iOS
 ---
 
-##Run Loop概念
+## Run Loop概念
 runloop正如其名，运行时循环，和Windows的消息循环类似，用于事件的调度和分发<!-- more -->。RunLoop 实际上就是一个对象，这个对象管理了其需要处理的事件和消息，并提供了一个入口函数来执行下面👇图1的步骤。线程执行了这个函数后，就会一直处于这个函数内部 "接受消息->等待->处理" 的循环中，直到这个循环结束（比如传入 quit 的消息），函数返回。
 ![runloop循环](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Multithreading/Art/runloop.jpg)
 
@@ -17,7 +17,7 @@ runloop正如其名，运行时循环，和Windows的消息循环类似，用于
 
 很多人都说run loop和线程是一一对应的关系，其实这种说法是不准确的。苹果不允许我们直接创建runloop，只提供了两个自动获取的函数：CFRunLoopGetMain() 和 CFRunLoopGetCurrent()，下面我们看看内部大致的实现：
 
-```
+```objc
 static CFMutableDictionaryRef __CFRunLoops = NULL;
 static CFLock_t loopsLock = CFLockInit;
 
@@ -73,7 +73,7 @@ CF_EXPORT CFRunLoopRef _CFRunLoopGet0(pthread_t t) {
 
 我们可以把runloop mode看做是监控input source和timer source以及run loop observer的集合。每次我们创建run loop 的时候都会指定一种mode，只有加入到对应mode的事件或者observer才能得到对应的处理，举个粟子：我们把一个定时器事件加入到`default mode`的时候，假如这时候滑动列表控件，这时候我们会发现定时器停止了，当滑动结束后定时器又恢复运行。这个例子其实就和run loop mode的切换有关，这里我们会详细分析，先看看Run Loop Model的数据结构：
 
-```
+```objc
 typedef struct __CFRunLoopMode *CFRunLoopModeRef;
 struct __CFRunLoopMode {
     CFRuntimeBase _base;
@@ -117,7 +117,7 @@ cocoa和CF内建支持使用相关的对象和方法创建port-based source。�
 
 举个粟子，在AFN2.6版本有个常驻线程接收网络请求回调消息，或者现在的RN，WEEX都有类似的实现，WEEX内部有一个常驻线程，用来处理组件的异步事件，RunLoop 启动前内部必须要有至少一个 Timer/Observer/Source，所以 WEEX 在 [runLoop run] 之前先创建了一个新的 NSMachPort 添加进去了：
 
-```
+```objc
 + (NSThread *)componentThread
 {
     static dispatch_once_t onceToken;
@@ -145,7 +145,7 @@ cocoa和CF内建支持使用相关的对象和方法创建port-based source。�
 
 苹果提供了几个方法支持创建自定义的source事件,这里就直接看例子吧：
 
-```
+```objc
 static void sourceCallBack(void *info) {
  NSLog(@"source signal");
 }
@@ -181,7 +181,7 @@ static void sourceCallBack(void *info) {
 
 在CF头文件中我们可以看到如下定义：
 
-```
+```objc
 
 /* Run Loop Observer Activities */
 typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
@@ -215,7 +215,7 @@ struct __CFRunLoopObserver {
 
 又比如我们可以在测试阶段添加一个observer，监测run loop各个阶段，判断出一个循环的耗时时间：
 
-```
+```objc
 static void addObserverWithOrder(CFIndex order, CFRunLoopActivity activities) {
   CFRunLoopObserverContext *context = NULL;
   if (order < 0) {
@@ -252,7 +252,7 @@ App启动后，苹果在主线程 RunLoop 里注册了两个 Observer，其回�
 
 大致的看了下runloop的内部实现，具体[源码](https://opensource.apple.com/tarballs/CF/)可以看这里。
 
-```
+```objc
 void CFRunLoopRun(void) {	/* DOES CALLOUT */
     int32_t result;
     do {
@@ -302,7 +302,7 @@ __CFRunLoopRun:
 `USE_DISPATCH_SOURCE_FOR_TIMERS`flag的使用情况？
 
 
-```
+```objc
 /* rl, rlm are locked on entrance and exit */
 static int32_t __CFRunLoopRun(CFRunLoopRef rl, CFRunLoopModeRef rlm, CFTimeInterval seconds, Boolean stopAfterHandle, CFRunLoopModeRef previousMode) {
     uint64_t startTSR = mach_absolute_time(); // 获取loop开始的时间
