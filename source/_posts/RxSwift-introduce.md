@@ -1,6 +1,8 @@
 ---
 title: RxSwift系列笔记-入门
 date: 2016-09-24 10:10:36
+categories:
+- swift
 tags: swift
 ---
 

@@ -1,12 +1,13 @@
 ---
 title: iOS block内部实现分析
 date: 2017-05-08 21:40:16
+categories:
+- iOS
 tags: iOS
 ---
 
-# iOS block
+# iOS block实现原理及获取block签名
 
-## block常见类型
 `block`和我们在其他语言常见的闭包类似，其实就是带有自动变量（局部变量）的匿名函数。
 <!-- more -->
 `block`是C语言级的语法，他们的使用和C语言类似，但是除了可执行代码之外，它们还可以包含自动（堆栈）或托管（堆）内存的变量绑定。因此，`block`维护了一组可用于在执行时影响行为的状态（数据）。
@@ -15,9 +16,25 @@ tags: iOS
 `block`和大多数OC对象一样，内部实现也是结构体，关于`block`具体实现，可以参考苹果开源代码库([libclosure-65](https://opensource.apple.com/source/libclosure/libclosure-65/runtime.c))。以下是摘录部分主要部分：
 
 ```objc
+
+#define BLOCK_DESCRIPTOR_1 1
 struct Block_descriptor_1 {
     uintptr_t reserved;
     uintptr_t size;
+};
+
+#define BLOCK_DESCRIPTOR_2 1
+struct Block_descriptor_2 {
+    // requires BLOCK_HAS_COPY_DISPOSE
+    void (*copy)(void *dst, const void *src);
+    void (*dispose)(const void *);
+};
+
+#define BLOCK_DESCRIPTOR_3 1
+struct Block_descriptor_3 {
+    // requires BLOCK_HAS_SIGNATURE
+    const char *signature;
+    const char *layout;     // contents depend on BLOCK_HAS_EXTENDED_LAYOUT
 };
 
 struct Block_layout {
@@ -27,6 +44,7 @@ struct Block_layout {
     void (*invoke)(void *, ...);
     struct Block_descriptor_1 *descriptor;
     // imported variables
+    // 这里有可能还有其他的descriptor，具体是根据flag来判断的
 };
 ```
 
@@ -47,6 +65,35 @@ enum {
     BLOCK_HAS_EXTENDED_LAYOUT=(1 << 31)  // compiler
 };
 ```
+
+### block获取方法签名
+在OC中我们是不能直接获取到OC block的方法签名的，但是从上面的定义我们可以发现，如果block有`Block_descriptor_3`结构体并且有`BLOCK_HAS_SIGNATURE`标志位的时候，我们可以通过下面的方式获取block的方法签名：
+
+```
+static struct Block_descriptor_3 * _Block_descriptor_3(struct Block_layout *aBlock)
+{
+    if (! (aBlock->flags & BLOCK_HAS_SIGNATURE)) return NULL;
+    uint8_t *desc = (uint8_t *)aBlock->descriptor;
+    desc += sizeof(struct Block_descriptor_1);
+    if (aBlock->flags & BLOCK_HAS_COPY_DISPOSE) {
+        desc += sizeof(struct Block_descriptor_2);
+    }
+    return (struct Block_descriptor_3 *)desc;
+}
+
+```
+
+在OC代码里面我们可以把上面的定义拷贝到需要的地方，根据上面得到的结构体进行下简单的转换：
+
+```
+static NSMethodSignature *get_block_signature(Block_descriptor_3 *desc) {
+	const char *signature = (*(const char **)desc->signature);
+  	return [NSMethodSignature signatureWithObjCTypes:signature];
+}
+```
+
+### block类型
+
 从[源码](https://opensource.apple.com/source/libclosure/libclosure-65/data.c)我们可以看到`block`主要有以下几种类型定义：
 
 ```objc
@@ -67,7 +114,7 @@ void * _NSConcreteWeakBlockVariable[32] = { 0 };
 StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之后，就被系统销毁了。
 
 >* _NSConcreteMallocBlock：
-有强指针引用或copy修饰的成员属性引用的block在真正发生copy的时候会复制一份到堆中成为MallocBlock，没有强指针引用即销毁，生命周期由代码控制。
+有强指针引用或copy修饰的成员属性引用的block,在真正发生copy的时候会复制一份到堆中成为MallocBlock，没有强指针引用即销毁，生命周期由代码控制。
 
 >* _NSConcreteGlobalBlock：
 没有用到外界变量或只用到全局变量、静态变量的block为_NSConcreteGlobalBlock，生命周期从创建到APP运行结束。
@@ -154,7 +201,14 @@ StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之�
 `block_copy`具体实现：
 
 ```objc
-// Copy, or bump refcount, of a block.  If really copying, call the copy helper if present.
+static void _Block_call_copy_helper(void *result, struct Block_layout *aBlock)
+{
+    struct Block_descriptor_2 *desc = _Block_descriptor_2(aBlock);
+    if (!desc) return;
+
+    (*desc->copy)(result, aBlock); // do fixup
+}
+
 void *_Block_copy(const void *arg) {
     struct Block_layout *aBlock;
 
@@ -171,7 +225,7 @@ void *_Block_copy(const void *arg) {
         return aBlock;
     }
     else {
-        // Its a stack block.  Make a copy.
+        // 在栈上初始化一个block，然后copy到堆上
         struct Block_layout *result = malloc(aBlock->descriptor->size);
         if (!result) return NULL;
         memmove(result, aBlock, aBlock->descriptor->size); // bitcopy first
@@ -179,7 +233,7 @@ void *_Block_copy(const void *arg) {
         result->flags &= ~(BLOCK_REFCOUNT_MASK|BLOCK_DEALLOCATING);    // XXX not needed
         result->flags |= BLOCK_NEEDS_FREE | 2;  // logical refcount 1
         _Block_call_copy_helper(result, aBlock);
-        // Set isa last so memory analysis tools see a fully-initialized object.
+        // 将ISA指针指向_NSConcreteMallocBlock
         result->isa = _NSConcreteMallocBlock;
         return result;
     }

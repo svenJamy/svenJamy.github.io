@@ -1,11 +1,13 @@
 ---
 title: ios-dsym-linkmap
-date: 2018-01-08 22:32:24
-tags:
+date: 2017-09-10 20:32:10
+categories:
+- iOS
+tags: iOS
 ---
 
 # dsym
-当APP发生crash的时候，🍎会生成一个` crash report`文件保存在设备上，我们可以通过Xcode导出，但是这个文件是`unsymbolicated `，需要解析之后才能进行分析，这里就需要用到`dsym`文件。
+当APP发生crash的时候，🍎会生成一个` crash report`文件保存在设备上，我们可以通过Xcode导出，但是这个文件是`unsymbolicated `，需要解析之后才能进行分析，这里就需要用到`dsym`文件<!-- more -->。
 
 ## dsym符号集
 当编译器把目标代码编译成机器码的时候，它还生成调试符号，将编译二进制中的每个机器指令映射回源代码的对应的位置。在`Xcode`中设置`DEBUG_INFORMATION_FORMAT `属性可以调试符号是在二进制文件中还是单独的`dsym`文件，建议在`debug`模式选择`DWARF`，因为生成`dsym`文件对编译时间会有一定的影响。

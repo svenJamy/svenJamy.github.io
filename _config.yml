@@ -3,8 +3,8 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: jamy.gush
-subtitle:
+title: 加米的博客
+subtitle: It's easy to be different, but difficult to be better.
 description:
 author: jamy.gush
 language: zh-Hans
@@ -76,6 +76,15 @@ feed:
   type: atom       #feed 类型 (atom/rss2)
   path: atom.xml   #rss 路径
   limit: 20 
+
+# Extensions
+Plugins:
+- hexo-generator-feed
+- hexo-generator-sitemap
+
+#sitemap
+sitemap:
+  path: sitemap.xml
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html

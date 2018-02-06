@@ -1,10 +1,12 @@
 ---
 title: ios-machO
-date: 2018-01-08 22:32:45
-tags:
+date: 2017-07-08 20:32:45
+categories:
+- iOS
+tags: iOS
 ---
 
-熟悉`Linux`和`windows`开发的同学都知道，`ELF`是`Linux`下可执行文件的格式，`PE32／PE32+`是`windows`下可执行文件的格式，下面我们要讲的就`OSX`和`iOS`环境下可执行文件的格式：`mach-o`。
+熟悉`Linux`和`windows`开发的同学都知道，`ELF`是`Linux`下可执行文件的格式，`PE32／PE32+`是`windows`下可执行文件的格式，下面我们要讲的就`OSX`和`iOS`环境下可执行文件的格式：`mach-o`<!-- more -->。
 
 Mach-O 是 Mach object 文件格式的缩写，它是一种用于记录可执行文件、对象代码、共享库、动态加载代码和内存转储的文件格式。作为 .out 格式的替代品，Mach-O 提供了更好的扩展性，并提升了符号表中信息的访问速度（from wiki）。
 

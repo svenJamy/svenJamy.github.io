@@ -1,11 +1,13 @@
 ---
 title: autoreleasepool
 date: 2018-01-08 22:29:42
-tags:
+categories:
+- iOS
+tags: iOS
 ---
 
 ## 简介
-AutoreleasePool（自动释放池）是OC中的一种内存自动回收机制。像在C++等语言中，手动malloc的对象是要通过free去释放的，如果没有释放，就会产生内存泄漏，在OC里面是通过ARC方式去管理内存的。AutoreleasePool提供了这样一种机制，它可以延迟对象的释放时机，加入到page中的对象是由AutoreleasePool统一释放的。
+AutoreleasePool（自动释放池）是OC中的一种内存自动回收机制。像在C++等语言中，手动malloc的对象是要通过free去释放的，如果没有释放，就会产生内存泄漏，在OC里面是通过ARC方式去管理内存的。AutoreleasePool提供了这样一种机制，它可以延迟对象的释放时机，加入到page中的对象是由AutoreleasePool统一释放的<!-- more -->。
 
 在公司平时的面试中，也会问面试者这个问题，`Autorelease`对象是什么时候被释放的？大多数人都没有回答上来，虽然不能以这个来衡量面试者的标准，但是了解`Autorelease`内部的实现，对于一个高级程序员来说是很有必要的。
 

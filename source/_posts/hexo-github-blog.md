@@ -1,6 +1,8 @@
 ---
 title: hexo+next+gitHub构建简单博客
 date: 2016-09-05 22:00:00
+categories:
+- hexo
 tags:
 ---
 
@@ -155,3 +157,56 @@ disqus_shortname: website name
 ```
 最后在发布下，就可以看到你的博文下面有对应的disqus评论区了，是不是很简单~~~
 更多的主题配置可以参考下官网，比如分类，打赏等等。。。
+
+## 配置域名
+
+* 首先在阿里云或者腾讯云上购买自己的域名；
+* 在你的域名注册提供商那里配置DNS解析，获取GitHub的IP[地址](https://help.github.com/articles/setting-up-an-apex-domain/)，进入source目录下，添加CNAME文件：
+
+```
+$ cd source/
+$ touch CNAME
+$ vim CNAME # 然后输入你的域名
+$ git add CNAME
+$ git commit -m "add CNAME"
+
+```
+注意一定是添加到source目录下，不是根目录下，完成之后重新部署一下，刷新GitHub就能看到效果啦。
+
+## 添加插件
+可以通过下面的命令来添加sitemap和feed插件：
+
+```
+ npm install hexo-generator-feed
+ npm install hexo-generator-sitemap
+```
+修改_config.yml，增加以下内容：
+
+```
+//# Extensions
+Plugins:
+- hexo-generator-feed
+- hexo-generator-sitemap
+#Feed Atom
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+#sitemap
+sitemap:
+  path: sitemap.xml
+```
+
+## about页面
+
+在根目录下执行下面命令：
+
+```
+ hexo new page "about"
+```
+然后在对应的md文件添加对应的简介即可。
+
+
+## comment
+
+之前用的是disqus，但是很容易被墙，所以后面换成了gitment，具体的操作可以见作者的这篇博文[这里](https://zonghongyan.github.io/2017/06/29/201706292034/)。有一点需要注意的是，如果你和我一样配置了自己的域名，在auth app的时候home URL和call back URL一定要填写自己的域名，不能是之前GitHub的地址，比如xxx.github.io。其他的按作者的配置走既可。

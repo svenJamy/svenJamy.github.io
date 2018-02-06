@@ -1,6 +1,8 @@
 ---
 title: swift Sequence及map，flatmap的实现
 date: 2016-09-20 09:40:16
+categories:
+- swift
 tags: swift
 ---
 

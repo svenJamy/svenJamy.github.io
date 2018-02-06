@@ -1,6 +1,8 @@
 ---
 title: iOS Run Loop
 date: 2017-05-10 19:00:00
+categories:
+- iOS
 tags: iOS
 ---
 

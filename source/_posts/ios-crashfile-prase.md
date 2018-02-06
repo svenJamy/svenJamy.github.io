@@ -1,11 +1,13 @@
 ---
 title: ios-crashfile-prase
-date: 2018-01-08 22:31:45
-tags:
+date: 2017-10-04 22:10:15
+categories:
+- iOS
+tags: iOS
 ---
 
 # crash文件
-当运行的APP发生crash的时候，如果代码里面增加对应的handler或者有第三方的crash SDK，他们会采集相关的运行堆栈，发送到对应的服务器上，然后通过开发者上传的dsym文件进行解析，得到符号化的堆栈信息，我们可以通过分析这个知道crash的原因。另外，当发生crash的时候，相应的设备上也会生成一个crash文件。我们可以通过Xcode导出crash文件。
+当运行的APP发生crash的时候，如果代码里面增加对应的handler或者有第三方的crash SDK，他们会采集相关的运行堆栈，发送到对应的服务器上，然后通过开发者上传的dsym文件进行解析，得到符号化的堆栈信息，我们可以通过分析这个知道crash的原因。另外，当发生crash的时候，相应的设备上也会生成一个crash文件。我们可以通过Xcode导出crash文件<!-- more -->。
 
 Window->Devices and Simulator->选择对应的设备->view device log:
 
