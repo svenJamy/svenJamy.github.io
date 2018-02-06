@@ -1,0 +1,851 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="iOS," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="jamy.gush" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="iOS blockblock常见类型block和我们在其他语言常见的闭包类似，其实就是带有自动变量（局部变量）的匿名函数。">
+<meta name="keywords" content="iOS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS block内部实现分析">
+<meta property="og:url" content="http://yoursite.com/2017/05/08/iOS-block/index.html">
+<meta property="og:site_name" content="jamy.gush">
+<meta property="og:description" content="iOS blockblock常见类型block和我们在其他语言常见的闭包类似，其实就是带有自动变量（局部变量）的匿名函数。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-02-06T10:15:31.843Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS block内部实现分析">
+<meta name="twitter:description" content="iOS blockblock常见类型block和我们在其他语言常见的闭包类似，其实就是带有自动变量（局部变量）的匿名函数。">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"always","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/05/08/iOS-block/"/>
+
+
+
+
+
+  <title>iOS block内部实现分析 | jamy.gush</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">jamy.gush</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/05/08/iOS-block/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="jamy_gu">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="jamy.gush">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS block内部实现分析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-08T21:40:16+08:00">
+                2017-05-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/05/08/iOS-block/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/05/08/iOS-block/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="iOS-block"><a href="#iOS-block" class="headerlink" title="iOS block"></a>iOS block</h1><h2 id="block常见类型"><a href="#block常见类型" class="headerlink" title="block常见类型"></a>block常见类型</h2><p><code>block</code>和我们在其他语言常见的闭包类似，其实就是带有自动变量（局部变量）的匿名函数。<br><a id="more"></a><br><code>block</code>是C语言级的语法，他们的使用和C语言类似，但是除了可执行代码之外，它们还可以包含自动（堆栈）或托管（堆）内存的变量绑定。因此，<code>block</code>维护了一组可用于在执行时影响行为的状态（数据）。</p>
+<h3 id="block数据结构"><a href="#block数据结构" class="headerlink" title="block数据结构"></a>block数据结构</h3><p><code>block</code>和大多数OC对象一样，内部实现也是结构体，关于<code>block</code>具体实现，可以参考苹果开源代码库(<a href="https://opensource.apple.com/source/libclosure/libclosure-65/runtime.c" target="_blank" rel="noopener">libclosure-65</a>)。以下是摘录部分主要部分：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> Block_descriptor_1 &#123;</span><br><span class="line">    uintptr_t reserved;</span><br><span class="line">    uintptr_t size;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> Block_layout &#123;</span><br><span class="line">    <span class="keyword">void</span> *isa;</span><br><span class="line">    <span class="keyword">volatile</span> int32_t flags; <span class="comment">// contains ref count</span></span><br><span class="line">    int32_t reserved; </span><br><span class="line">    <span class="keyword">void</span> (*invoke)(<span class="keyword">void</span> *, ...);</span><br><span class="line">    <span class="keyword">struct</span> Block_descriptor_1 *descriptor;</span><br><span class="line">    <span class="comment">// imported variables</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>我们可以从上面block的内存布局中看出，<code>isa</code>指针会指向<code>block</code>所属的类型，用于帮助运行时系统进行处理。第二个变量<code>flag</code>的定义如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Values for Block_layout-&gt;flags to describe block objects</span></span><br><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    BLOCK_DEALLOCATING =      (<span class="number">0x0001</span>),  <span class="comment">// runtime</span></span><br><span class="line">    BLOCK_REFCOUNT_MASK =     (<span class="number">0xfffe</span>),  <span class="comment">// runtime</span></span><br><span class="line">    BLOCK_NEEDS_FREE =        (<span class="number">1</span> &lt;&lt; <span class="number">24</span>), <span class="comment">// runtime</span></span><br><span class="line">    BLOCK_HAS_COPY_DISPOSE =  (<span class="number">1</span> &lt;&lt; <span class="number">25</span>), <span class="comment">// compiler</span></span><br><span class="line">    BLOCK_HAS_CTOR =          (<span class="number">1</span> &lt;&lt; <span class="number">26</span>), <span class="comment">// compiler: helpers have C++ code</span></span><br><span class="line">    BLOCK_IS_GC =             (<span class="number">1</span> &lt;&lt; <span class="number">27</span>), <span class="comment">// runtime</span></span><br><span class="line">    BLOCK_IS_GLOBAL =         (<span class="number">1</span> &lt;&lt; <span class="number">28</span>), <span class="comment">// compiler</span></span><br><span class="line">    BLOCK_USE_STRET =         (<span class="number">1</span> &lt;&lt; <span class="number">29</span>), <span class="comment">// compiler: undefined if !BLOCK_HAS_SIGNATURE</span></span><br><span class="line">    BLOCK_HAS_SIGNATURE  =    (<span class="number">1</span> &lt;&lt; <span class="number">30</span>), <span class="comment">// compiler</span></span><br><span class="line">    BLOCK_HAS_EXTENDED_LAYOUT=(<span class="number">1</span> &lt;&lt; <span class="number">31</span>)  <span class="comment">// compiler</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>从<a href="https://opensource.apple.com/source/libclosure/libclosure-65/data.c" target="_blank" rel="noopener">源码</a>我们可以看到<code>block</code>主要有以下几种类型定义：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> * _NSConcreteStackBlock[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line"><span class="keyword">void</span> * _NSConcreteMallocBlock[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line"><span class="keyword">void</span> * _NSConcreteAutoBlock[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line"><span class="keyword">void</span> * _NSConcreteFinalizingBlock[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line"><span class="keyword">void</span> * _NSConcreteGlobalBlock[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line"><span class="keyword">void</span> * _NSConcreteWeakBlockVariable[<span class="number">32</span>] = &#123; <span class="number">0</span> &#125;;</span><br></pre></td></tr></table></figure>
+<p>其中在iOS中常用的是<code>_NSConcreteStackBlock</code>，<code>_NSConcreteMallocBlock</code>，<code>_NSConcreteGlobalBlock</code>，另外几个是在GC环境中使用的，这里我们不讨论这几种类型。</p>
+<p>捕获外部变量角度看他们之间的区别：</p>
+<blockquote>
+<ul>
+<li><p>_NSConcreteStackBlock：<br>只用到外部局部变量、成员属性变量，且没有强指针引用的block都是StackBlock。<br>StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之后，就被系统销毁了。</p>
+</li>
+<li><p>_NSConcreteMallocBlock：<br>有强指针引用或copy修饰的成员属性引用的block在真正发生copy的时候会复制一份到堆中成为MallocBlock，没有强指针引用即销毁，生命周期由代码控制。</p>
+</li>
+<li><p>_NSConcreteGlobalBlock：<br>没有用到外界变量或只用到全局变量、静态变量的block为_NSConcreteGlobalBlock，生命周期从创建到APP运行结束。</p>
+</li>
+</ul>
+</blockquote>
+<h3 id="NSConcreteGlobalBlock"><a href="#NSConcreteGlobalBlock" class="headerlink" title="_NSConcreteGlobalBlock"></a>_NSConcreteGlobalBlock</h3><p>在以下情况中，block 会初始化为_NSConcreteGlobalBlock：</p>
+<blockquote>
+<ul>
+<li>未捕获外部变量(除了静态变量和全局变量)</li>
+<li>当需要布局（layout）的变量的数量为0</li>
+</ul>
+</blockquote>
+<p>在<a href="http://clang.llvm.org/doxygen/CGBlocks_8cpp_source.html#l00326" target="_blank" rel="noopener">CGBlocks_8cpp_source</a>源码中我们可以看到有如下定义：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> computeBlockInfo(CodeGenModule &amp;<span class="built_in">CGM</span>, CodeGenFunction *<span class="built_in">CGF</span>,                              <span class="built_in">CGBlockInfo</span> &amp;info) &#123;</span><br><span class="line"> ASTContext &amp;C = <span class="built_in">CGM</span>.getContext();</span><br><span class="line"> <span class="keyword">const</span> BlockDecl *block = info.getBlockDecl();</span><br><span class="line"> SmallVector&lt;llvm::Type*, <span class="number">8</span>&gt; elementTypes;</span><br><span class="line"> initializeForBlockHeader(<span class="built_in">CGM</span>, info, elementTypes);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (!block-&gt;hasCaptures()) &#123; <span class="comment">// 如果没有捕获外部变量</span></span><br><span class="line"> info.StructureType =</span><br><span class="line"> llvm::StructType::get(<span class="built_in">CGM</span>.getLLVMContext(), elementTypes, <span class="literal">true</span>);</span><br><span class="line"> info.CanBeGlobal = <span class="literal">true</span>; <span class="comment">// _NSConcreteGlobalBlock</span></span><br><span class="line"> <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line">  ...</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// If that was everything, we're done here.</span></span><br><span class="line">  <span class="keyword">if</span> (layout.empty()) &#123;</span><br><span class="line">  	info.StructureType =</span><br><span class="line">	llvm::StructType::get(<span class="built_in">CGM</span>.getLLVMContext(), elementTypes, <span class="literal">true</span>);</span><br><span class="line">	info.CanBeGlobal = <span class="literal">true</span>;</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">  ...</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>没有用到外部变量可以理解，但是全局和静态变量为什么也是global的呢？</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> globle_int = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">float</span> globle_float = <span class="number">11.</span>f;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> globle_block() &#123;</span><br><span class="line">     <span class="keyword">static</span> <span class="keyword">int</span> function_int = <span class="number">12</span>;</span><br><span class="line">    <span class="keyword">void</span> (^testBlock)() = ^&#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"get the value:%@,%@,%@"</span>,@(globle_int),@(globle_float),@(function_int));</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"block:%@"</span>, testBlock);</span><br><span class="line">    testBlock();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line">    </span><br><span class="line">    globle_block();</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2017-05-07 10:00:20.258943 block[34791:349008] block:&lt;__NSGlobalBlock__: 0x100001060&gt;</span><br><span class="line">2017-05-07 10:00:20.259451 block[34791:349008] get the value:10,11,12</span><br><span class="line">Program ended with exit code: 0</span><br></pre></td></tr></table></figure>
+<p>在<code>return 0</code>之前打断点或者加上watchpoint可以看到，函数执行之后<code>block</code>的内存区域还未释放。</p>
+<h3 id="NSConcreteStackBlock"><a href="#NSConcreteStackBlock" class="headerlink" title="_NSConcreteStackBlock"></a>_NSConcreteStackBlock</h3><p>只用到外部局部变量、成员属性变量，且没有强指针引用的block都是StackBlock。<br>StackBlock的生命周期由系统控制的，在栈上创建，一旦返回之后，就被系统销毁了。</p>
+<h3 id="NSConcreteMallocBlock"><a href="#NSConcreteMallocBlock" class="headerlink" title="_NSConcreteMallocBlock"></a>_NSConcreteMallocBlock</h3><p>由于<code>_NSConcreteStackBlock</code>在函数返回后就自动释放了，在ARC环境下，编译器会自动判断，在符合以下情况下的<code>block</code>copy到堆上去：</p>
+<blockquote>
+<ul>
+<li>手动调用copy关键字；</li>
+<li>block被强引用到或者赋给<code>copy</code>,<code>strong</code>修饰的property；</li>
+<li>block作为方法返回值；</li>
+</ul>
+</blockquote>
+<p>当block发生<code>copy</code>时，会调用到如下方法<a href="https://opensource.apple.com/source/libclosure/libclosure-65/runtime.c" target="_blank" rel="noopener">libclosure-65</a>，关键就是最后一步，把block的<code>isa</code>指针指向<code>_NSConcreteMallocBlock</code>。</p>
+<p><code>block_copy</code>具体实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Copy, or bump refcount, of a block.  If really copying, call the copy helper if present.</span></span><br><span class="line"><span class="keyword">void</span> *_Block_copy(<span class="keyword">const</span> <span class="keyword">void</span> *arg) &#123;</span><br><span class="line">    <span class="keyword">struct</span> Block_layout *aBlock;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!arg) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// The following would be better done as a switch statement</span></span><br><span class="line">    aBlock = (<span class="keyword">struct</span> Block_layout *)arg;</span><br><span class="line">    <span class="keyword">if</span> (aBlock-&gt;flags &amp; BLOCK_NEEDS_FREE) &#123;</span><br><span class="line">        <span class="comment">// latches on high</span></span><br><span class="line">        latching_incr_int(&amp;aBlock-&gt;flags);</span><br><span class="line">        <span class="keyword">return</span> aBlock;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (aBlock-&gt;flags &amp; BLOCK_IS_GLOBAL) &#123;</span><br><span class="line">        <span class="keyword">return</span> aBlock;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Its a stack block.  Make a copy.</span></span><br><span class="line">        <span class="keyword">struct</span> Block_layout *result = malloc(aBlock-&gt;descriptor-&gt;size);</span><br><span class="line">        <span class="keyword">if</span> (!result) <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">        memmove(result, aBlock, aBlock-&gt;descriptor-&gt;size); <span class="comment">// bitcopy first</span></span><br><span class="line">        <span class="comment">// reset refcount</span></span><br><span class="line">        result-&gt;flags &amp;= ~(BLOCK_REFCOUNT_MASK|BLOCK_DEALLOCATING);    <span class="comment">// XXX not needed</span></span><br><span class="line">        result-&gt;flags |= BLOCK_NEEDS_FREE | <span class="number">2</span>;  <span class="comment">// logical refcount 1</span></span><br><span class="line">        _Block_call_copy_helper(result, aBlock);</span><br><span class="line">        <span class="comment">// Set isa last so memory analysis tools see a fully-initialized object.</span></span><br><span class="line">        result-&gt;isa = _NSConcreteMallocBlock;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="变量捕获-block"><a href="#变量捕获-block" class="headerlink" title="变量捕获__block"></a>变量捕获__block</h2><p>在平时的使用中我们都知道如果不需要改变外部变量的值的话，在block中是可以直接使用外部变量的，但是如果在block中需要改变外部变量，如果不加上<code>__block</code>的话编译器会给我们一个错误的警告<code>Variable is not assignable(missing __block type specifier)</code>。我们通过下面2个例子看看其中的缘由，我们新建一个main.m的OC文件，在终端输入以下命令<code>clang -rewirte-objc main.m</code>，<code>clang</code>会为我们自动生成一个<code>mian.cpp</code>的文件：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> globle_int = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> local_int = <span class="number">11</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> number = <span class="number">12</span>;</span><br><span class="line">    <span class="keyword">void</span> (^testBlock)() = ^&#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"number incrment:%@-%@-%@"</span>, @(globle_int++), @(local_int++), @(number));</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    testBlock();</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"number incrment:%@-%@-%@"</span>, @(globle_int), @(local_int), @(number));</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2017-05-07 11:19:49.399983 block[37054:390808] number incrment:10-11-12</span><br><span class="line">2017-05-07 11:19:49.401191 block[37054:390808] number incrment:11-12-12</span><br></pre></td></tr></table></figure>
+<p>从结果我们可以看到，全局变量和静态变量在<code>block</code>中修改值以后，他们的值确实发生了改变，但是局部变量却不行，我们打开<code>main.cpp</code>文件，大约有10W行左右，我们只需要关注最后面就行了：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> globle_int = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;</span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;</span><br><span class="line">  <span class="keyword">int</span> *local_int;</span><br><span class="line">  <span class="keyword">int</span> number;</span><br><span class="line">  __main_block_impl_0(<span class="keyword">void</span> *fp, <span class="keyword">struct</span> __main_block_desc_0 *desc, <span class="keyword">int</span> *_local_int, <span class="keyword">int</span> _number, <span class="keyword">int</span> flags=<span class="number">0</span>) : local_int(_local_int), number(_number) &#123;</span><br><span class="line">    impl.isa = &amp;_NSConcreteStackBlock;</span><br><span class="line">    impl.Flags = flags;</span><br><span class="line">    impl.FuncPtr = fp;</span><br><span class="line">    Desc = desc;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __main_block_func_0(<span class="keyword">struct</span> __main_block_impl_0 *__cself) &#123;</span><br><span class="line">  <span class="keyword">int</span> *local_int = __cself-&gt;local_int; <span class="comment">// bound by copy</span></span><br><span class="line">  <span class="keyword">int</span> number = __cself-&gt;number; <span class="comment">// bound by copy</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">NSLog</span>((<span class="built_in">NSString</span> *)&amp;__NSConstantStringImpl__var_folders_r9_713pry0d4_x17tjbstr27syh0000gn_T_main_934a9a_mi_0, ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (globle_int++)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), ((*local_int)++)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(number)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">struct</span> __main_block_desc_0 &#123;</span><br><span class="line">  size_t reserved;</span><br><span class="line">  size_t Block_size;</span><br><span class="line">&#125; __main_block_desc_0_DATA = &#123; <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> __main_block_impl_0)&#125;;</span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> local_int = <span class="number">11</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> number = <span class="number">12</span>;</span><br><span class="line">    <span class="keyword">void</span> (*testBlock)() = ((<span class="keyword">void</span> (*)())&amp;__main_block_impl_0((<span class="keyword">void</span> *)__main_block_func_0, &amp;__main_block_desc_0_DATA, &amp;local_int, number));</span><br><span class="line"></span><br><span class="line">    ((<span class="keyword">void</span> (*)(__block_impl *))((__block_impl *)testBlock)-&gt;FuncPtr)((__block_impl *)testBlock);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">NSLog</span>((<span class="built_in">NSString</span> *)&amp;__NSConstantStringImpl__var_folders_r9_713pry0d4_x17tjbstr27syh0000gn_T_main_934a9a_mi_1, ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(globle_int)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(local_int)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(number)));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，当<code>block</code>引用到外部变量的时候，会自动的追加在构造函数中：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__main_block_impl_0(<span class="keyword">void</span> *fp, <span class="keyword">struct</span> __main_block_desc_0 *desc, <span class="keyword">int</span> *_local_int, <span class="keyword">int</span> _number, <span class="keyword">int</span> flags=<span class="number">0</span>) : local_int(_local_int), number(_number) &#123;</span><br><span class="line">    impl.isa = &amp;_NSConcreteStackBlock;</span><br><span class="line">    impl.Flags = flags;</span><br><span class="line">    impl.FuncPtr = fp;</span><br><span class="line">    Desc = desc;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>这样外部变量就被添加到block中，也就是说，外部变量成为了block结构的一部分。</p>
+<p>有一点我们要注意：在上面的构造函数参数中，并没有全局变量。这是因为全局变量的作用域是全局的，所以在block中也无需再次去捕获，只有一个内存地址，在block中改变了值，那么外部同样也改变了。</p>
+<p>另外在block_fun_0函数中我们可以看到，编译器自动的给我们加上了<code>// bound by copy</code>注释，捕获的值都是通过<code>__cself-&gt;local_int</code>这样来访问的，并不是对应变量的内存地址。所以在block中改变了相应的值，在外部也是没有变化的。所以如果我们在block中直接改变值，编译器会给我们上面的那个警告。</p>
+<p>总结就是：block可以捕获外部变量，但是仅仅是变量的值而不是内存地址，如果需要改变操作在外部也有效，必须要加上<code>__block</code>关键字。</p>
+<p>我们来看看加上__block之后的效果：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> globle_int = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> local_int = <span class="number">11</span>;</span><br><span class="line">    </span><br><span class="line">    __block <span class="keyword">int</span> number = <span class="number">12</span>;</span><br><span class="line">    <span class="keyword">void</span> (^testBlock)() = ^&#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"number incrment:%@-%@-%@"</span>, @(globle_int++), @(local_int++), @(number++));</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    testBlock();</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"number incrment:%@-%@-%@"</span>, @(globle_int), @(local_int), @(number));</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2017-05-07 11:42:53.995190 block[37534:401137] number incrment:10-11-12</span><br><span class="line">2017-05-07 11:42:53.996032 block[37534:401137] number incrment:11-12-13</span><br></pre></td></tr></table></figure>
+<p>可以看到局部变量<code>number</code>在外部的值也同样改变了，我们通过<code>clang</code>查看下具体内部的实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> globle_int = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">struct</span> __Block_byref_number_0 &#123;</span><br><span class="line">  <span class="keyword">void</span> *__isa;</span><br><span class="line">__Block_byref_number_0 *__forwarding;</span><br><span class="line"> <span class="keyword">int</span> __flags;</span><br><span class="line"> <span class="keyword">int</span> __size;</span><br><span class="line"> <span class="keyword">int</span> number;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;</span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;</span><br><span class="line">  <span class="keyword">int</span> *local_int;</span><br><span class="line">  __Block_byref_number_0 *number; <span class="comment">// by ref</span></span><br><span class="line">  __main_block_impl_0(<span class="keyword">void</span> *fp, <span class="keyword">struct</span> __main_block_desc_0 *desc, <span class="keyword">int</span> *_local_int, __Block_byref_number_0 *_number, <span class="keyword">int</span> flags=<span class="number">0</span>) : local_int(_local_int), number(_number-&gt;__forwarding) &#123;</span><br><span class="line">    impl.isa = &amp;_NSConcreteStackBlock;</span><br><span class="line">    impl.Flags = flags;</span><br><span class="line">    impl.FuncPtr = fp;</span><br><span class="line">    Desc = desc;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __main_block_func_0(<span class="keyword">struct</span> __main_block_impl_0 *__cself) &#123;</span><br><span class="line">  __Block_byref_number_0 *number = __cself-&gt;number; <span class="comment">// bound by ref</span></span><br><span class="line">  <span class="keyword">int</span> *local_int = __cself-&gt;local_int; <span class="comment">// bound by copy</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">NSLog</span>((<span class="built_in">NSString</span> *)&amp;__NSConstantStringImpl__var_folders_r9_713pry0d4_x17tjbstr27syh0000gn_T_main_6ca483_mi_0, ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (globle_int++)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), ((*local_int)++)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), ((number-&gt;__forwarding-&gt;number)++)));</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __main_block_copy_0(<span class="keyword">struct</span> __main_block_impl_0*dst, <span class="keyword">struct</span> __main_block_impl_0*src) &#123;_Block_object_assign((<span class="keyword">void</span>*)&amp;dst-&gt;number, (<span class="keyword">void</span>*)src-&gt;number, <span class="number">8</span><span class="comment">/*BLOCK_FIELD_IS_BYREF*/</span>);&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __main_block_dispose_0(<span class="keyword">struct</span> __main_block_impl_0*src) &#123;_Block_object_dispose((<span class="keyword">void</span>*)src-&gt;number, <span class="number">8</span><span class="comment">/*BLOCK_FIELD_IS_BYREF*/</span>);&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">struct</span> __main_block_desc_0 &#123;</span><br><span class="line">  size_t reserved;</span><br><span class="line">  size_t Block_size;</span><br><span class="line">  <span class="keyword">void</span> (*<span class="keyword">copy</span>)(<span class="keyword">struct</span> __main_block_impl_0*, <span class="keyword">struct</span> __main_block_impl_0*);</span><br><span class="line">  <span class="keyword">void</span> (*dispose)(<span class="keyword">struct</span> __main_block_impl_0*);</span><br><span class="line">&#125; __main_block_desc_0_DATA = &#123; <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0&#125;;</span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> local_int = <span class="number">11</span>;</span><br><span class="line"></span><br><span class="line">    __attribute__((__blocks__(<span class="keyword">byref</span>))) __Block_byref_number_0 number = &#123;(<span class="keyword">void</span>*)<span class="number">0</span>,(__Block_byref_number_0 *)&amp;number, <span class="number">0</span>, <span class="keyword">sizeof</span>(__Block_byref_number_0), <span class="number">12</span>&#125;;</span><br><span class="line">    <span class="keyword">void</span> (*testBlock)() = ((<span class="keyword">void</span> (*)())&amp;__main_block_impl_0((<span class="keyword">void</span> *)__main_block_func_0, &amp;__main_block_desc_0_DATA, &amp;local_int, (__Block_byref_number_0 *)&amp;number, <span class="number">570425344</span>));</span><br><span class="line"></span><br><span class="line">    ((<span class="keyword">void</span> (*)(__block_impl *))((__block_impl *)testBlock)-&gt;FuncPtr)((__block_impl *)testBlock);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">NSLog</span>((<span class="built_in">NSString</span> *)&amp;__NSConstantStringImpl__var_folders_r9_713pry0d4_x17tjbstr27syh0000gn_T_main_6ca483_mi_1, ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(globle_int)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)(local_int)), ((<span class="built_in">NSNumber</span> *(*)(Class, SEL, <span class="keyword">int</span>))(<span class="keyword">void</span> *)objc_msgSend)(objc_getClass(<span class="string">"NSNumber"</span>), sel_registerName(<span class="string">"numberWithInt:"</span>), (<span class="keyword">int</span>)((number.__forwarding-&gt;number))));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面源码可以看出带<code>__block</code>的变量被捕获后被转换成了一个<code>__Block_byref_number_0</code>的结构体。这个结构体有5个变量，第一个是<code>isa</code>指针，第二个是指向自己的指针，第三个是flag，第四个是他的大小，第五个是和捕获前一样的变量，主要是用来保存值的。</p>
+<p><code>__block</code>被编译器转换为以下代码，可以看到第二个初始化为指向自己的指针：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__attribute__((__blocks__(byref))) __Block_byref_number_0 number = &#123;(void*)0,(__Block_byref_number_0 *)&amp;number, 0, sizeof(__Block_byref_number_0), 12&#125;;</span><br></pre></td></tr></table></figure>
+<p>这样做的好处是当block被copy到堆上时，我们依然可以通过<code>number.__forwarding-&gt;number</code>的方式获取到变量的值。</p>
+<p>从上面的例子和编译源码分析我们可以得出以下结论：</p>
+<blockquote>
+<ul>
+<li>如果一个变量可以被block捕获，那么在<code>__main_block_impl_0</code>结构体构造函数中就追加了对应的变量。全局变量和静态全局变量<br>不会被block捕获，因为他们的作用域为全局，block无须去捕获他们，所以block不会增加他们的retaincount。静态变量和普通的变量可以被捕获。</li>
+<li>带有<strong>block的变量可以改变变量的值，因为他们是值引用的，没有</strong>block修饰的话只能在block中访问，不能修改他们的值。</li>
+</ul>
+</blockquote>
+<h2 id="Retain-Circle"><a href="#Retain-Circle" class="headerlink" title="Retain Circle"></a>Retain Circle</h2><p>在平时的开发中，我们可能也会遇到循环引用，比如在block中，对象持有block，block里面又直接引用了对象，这样就造成了循环引用。解决的方法都是一样：打破他们之间的持有关系。先列一个大致的实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#define weakify(var) __weak typeof(var) weak_##var = var;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#define strongify(var) \</span></span><br><span class="line">_Pragma(<span class="string">"clang diagnostic push"</span>) \</span><br><span class="line">_Pragma(<span class="string">"clang diagnostic ignored \"-Wshadow\""</span>) \</span><br><span class="line">__<span class="keyword">strong</span> <span class="keyword">typeof</span>(var) var = weak_<span class="meta">##var; \</span></span><br><span class="line">_Pragma(<span class="string">"clang diagnostic pop"</span>)</span><br></pre></td></tr></table></figure>
+<p>这个写法就是我们经常使用的形式，当然你也可以不写成宏的形式，和AFN一样在使用的时候手动去写也是可以的。</p>
+<p>文档更新中，写的不足的地方请谅解，您也可以留下您宝贵的意见，谢谢~~~</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Blocks/Articles/00_Introduction.html" target="_blank" rel="noopener">Blocks Programming Topics</a></p>
+<p><a href="http://clang.llvm.org/doxygen/CGBlocks_8cpp_source.html" target="_blank" rel="noopener">CGBlocks_8cpp_source</a></p>
+<p><a href="http://clang.llvm.org/docs/AutomaticReferenceCounting.html" target="_blank" rel="noopener">AutomaticReferenceCounting</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="/images/wechat-reward-image.jpg" alt="jamy_gu WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="/images/alipay-reward-image.jpg" alt="jamy_gu Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/24/RxSwift-introduce/" rel="next" title="RxSwift系列笔记-入门">
+                <i class="fa fa-chevron-left"></i> RxSwift系列笔记-入门
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/10/ios-run-Loop/" rel="prev" title="iOS Run Loop">
+                iOS Run Loop <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="jamy_gu" />
+          <p class="site-author-name" itemprop="name">jamy_gu</p>
+           
+              <p class="site-description motion-element" itemprop="description">Stay hungry，Stay foolish！</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">11</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/svenJamy" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/1805553781/profile?topnav=1&wvr=6" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iOS-block"><span class="nav-number">1.</span> <span class="nav-text">iOS block</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#block常见类型"><span class="nav-number">1.1.</span> <span class="nav-text">block常见类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block数据结构"><span class="nav-number">1.1.1.</span> <span class="nav-text">block数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NSConcreteGlobalBlock"><span class="nav-number">1.1.2.</span> <span class="nav-text">_NSConcreteGlobalBlock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NSConcreteStackBlock"><span class="nav-number">1.1.3.</span> <span class="nav-text">_NSConcreteStackBlock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NSConcreteMallocBlock"><span class="nav-number">1.1.4.</span> <span class="nav-text">_NSConcreteMallocBlock</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#变量捕获-block"><span class="nav-number">1.2.</span> <span class="nav-text">变量捕获__block</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Retain-Circle"><span class="nav-number">1.3.</span> <span class="nav-text">Retain Circle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">1.4.</span> <span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">jamy.gush</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://jamy-gu.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2017/05/08/iOS-block/';
+          this.page.identifier = '2017/05/08/iOS-block/';
+          this.page.title = 'iOS block内部实现分析';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://jamy-gu.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

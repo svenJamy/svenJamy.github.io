@@ -1,0 +1,807 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="jamy.gush" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="dsym当APP发生crash的时候，🍎会生成一个crash report文件保存在设备上，我们可以通过Xcode导出，但是这个文件是unsymbolicated，需要解析之后才能进行分析，这里就需要用到dsym文件。 dsym符号集当编译器把目标代码编译成机器码的时候，它还生成调试符号，将编译二进制中的每个机器指令映射回源代码的对应的位置。在Xcode中设置DEBUG_INFORMATION_">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ios-dsym-linkmap">
+<meta property="og:url" content="http://yoursite.com/2018/01/08/ios-dsym-linkmap/index.html">
+<meta property="og:site_name" content="jamy.gush">
+<meta property="og:description" content="dsym当APP发生crash的时候，🍎会生成一个crash report文件保存在设备上，我们可以通过Xcode导出，但是这个文件是unsymbolicated，需要解析之后才能进行分析，这里就需要用到dsym文件。 dsym符号集当编译器把目标代码编译成机器码的时候，它还生成调试符号，将编译二进制中的每个机器指令映射回源代码的对应的位置。在Xcode中设置DEBUG_INFORMATION_">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/1743782-9ea6447d761453c4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2018-02-06T10:15:31.848Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ios-dsym-linkmap">
+<meta name="twitter:description" content="dsym当APP发生crash的时候，🍎会生成一个crash report文件保存在设备上，我们可以通过Xcode导出，但是这个文件是unsymbolicated，需要解析之后才能进行分析，这里就需要用到dsym文件。 dsym符号集当编译器把目标代码编译成机器码的时候，它还生成调试符号，将编译二进制中的每个机器指令映射回源代码的对应的位置。在Xcode中设置DEBUG_INFORMATION_">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/1743782-9ea6447d761453c4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"always","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2018/01/08/ios-dsym-linkmap/"/>
+
+
+
+
+
+  <title>ios-dsym-linkmap | jamy.gush</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">jamy.gush</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/08/ios-dsym-linkmap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="jamy_gu">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="jamy.gush">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ios-dsym-linkmap</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-08T22:32:24+08:00">
+                2018-01-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/01/08/ios-dsym-linkmap/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/01/08/ios-dsym-linkmap/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="dsym"><a href="#dsym" class="headerlink" title="dsym"></a>dsym</h1><p>当APP发生crash的时候，🍎会生成一个<code>crash report</code>文件保存在设备上，我们可以通过Xcode导出，但是这个文件是<code>unsymbolicated</code>，需要解析之后才能进行分析，这里就需要用到<code>dsym</code>文件。</p>
+<h2 id="dsym符号集"><a href="#dsym符号集" class="headerlink" title="dsym符号集"></a>dsym符号集</h2><p>当编译器把目标代码编译成机器码的时候，它还生成调试符号，将编译二进制中的每个机器指令映射回源代码的对应的位置。在<code>Xcode</code>中设置<code>DEBUG_INFORMATION_FORMAT</code>属性可以调试符号是在二进制文件中还是单独的<code>dsym</code>文件，建议在<code>debug</code>模式选择<code>DWARF</code>，因为生成<code>dsym</code>文件对编译时间会有一定的影响。</p>
+<h2 id="atos命令解析crash文件"><a href="#atos命令解析crash文件" class="headerlink" title="atos命令解析crash文件"></a>atos命令解析crash文件</h2><p>atos是mac自带的命令，关于命令的相关使用，在term输入<code>man atos</code>即可。解析使用如下命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">atos -arch arm64 -o TheElements.app.dSYM/Contents/Resources/DWARF/TheElements -l 0x1000e4000 0x00000001000effdc</span><br><span class="line"></span><br><span class="line">-[AtomicElementViewController myTransitionDidStop:finished:context:]</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>-arch:指令集，现在release的都包含arm64指令集架构。可以通过<code>atool -hv appname</code>查看相关的指令集；</li>
+<li>-o :目标文件：可执行文件。</li>
+<li>-l : <code>load address</code>，及发生crash对应的镜像起始地址；后面一个地址是<code>symblicate address</code>，及符号地址。</li>
+</ul>
+<h3 id="通过symbolicatecrash分析crash文件"><a href="#通过symbolicatecrash分析crash文件" class="headerlink" title="通过symbolicatecrash分析crash文件"></a>通过<code>symbolicatecrash</code>分析crash文件</h3><p>Xcode有自带的<code>symbolicatecrash</code>工具,可以通过dSYM文件将crash文件中的16进制地址转换成可读的函数地址.<br>该文件是隐藏文件，可以通过如下命令查找并拷贝到系统目录下，并建立快捷方式。</p>
+<ul>
+<li>查找<code>symbolicatecrash</code>目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ find /Applications/Xcode.app -name symbolicatecrash -<span class="built_in">type</span> f</span><br><span class="line"></span><br><span class="line">-&gt; <span class="variable">$symbolicatecrashpath</span> = /Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/symbolicatecrash</span><br></pre></td></tr></table></figure>
+<ul>
+<li>拷贝<code>symbolicatecrash</code>到/usr/bin目录下（不行的话可以手动拷贝一下）</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo cp <span class="variable">$symbolicatecrashpath</span> /usr/bin/symbolicatecrash</span><br></pre></td></tr></table></figure>
+<ul>
+<li>设置<code>DEVELOPER_DIR</code>系统变量</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bash_profile</span><br><span class="line"><span class="comment">## 输入下面内容</span></span><br><span class="line"><span class="built_in">export</span> DEVELOPER_DIR=<span class="string">"/Applications/Xcode.app/Contents/Developer"</span></span><br><span class="line"><span class="comment">## 保存后执行</span></span><br><span class="line"><span class="built_in">source</span> .bash_profile</span><br></pre></td></tr></table></figure>
+<ul>
+<li>重启终端，确认设置<code>DEVELOPER_DIR</code>系统变量</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="variable">$DEVELOPER_DIR</span></span><br><span class="line">-&gt; /Applications/Xcode.app/Contents/Developer</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用如下命令，即可正确解析crash文件</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">symbolicatecrash appname.crash appname.app.dSYM &gt; crash.txt</span><br></pre></td></tr></table></figure>
+<p>关于具体如何解析crash文件，下篇文章会有详细介绍。</p>
+<h1 id="link-map文件"><a href="#link-map文件" class="headerlink" title="link map文件"></a>link map文件</h1><p><code>link map</code>文件是Xcode生成的链接映射文件，我们可以通过分析link map文件窥探二进制文件中布局及所有文件信息，符号表等信息。例如我们可以知道每个文件运行时所占用的空间，每个文件的方法等等。</p>
+<h2 id="XCode开启编译选项Write-Link-Map-File"><a href="#XCode开启编译选项Write-Link-Map-File" class="headerlink" title="XCode开启编译选项Write Link Map File"></a>XCode开启编译选项Write Link Map File</h2><p>XCode -&gt; Project -&gt; Build Settings -&gt; link map -&gt; 把Write Link Map File选项设为yes， 如下图所示。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/1743782-9ea6447d761453c4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="xcode setting.png"></p>
+<p>然后找到上面默认的文件位置（或者自定义位置），我们通过AFN的demo来查看下大致的结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Path: /Users/jamy/Library/Developer/Xcode/DerivedData/AFNetworking-cmhenvqhrddnjtcnbkcxlqypctnc/Build/Products/Debug-iphonesimulator/AFNetworking.framework/AFNetworking</span></span><br><span class="line"><span class="comment"># Arch: x86_64</span></span><br><span class="line"><span class="comment"># Object files:</span></span><br><span class="line">[  0] linker synthesized</span><br><span class="line">[  1] /Users/jamy/Library/Developer/Xcode/DerivedData/AFNetworking-cmhenvqhrddnjtcnbkcxlqypctnc/Build/Intermediates.noindex/AFNetworking.build/Debug-iphonesimulator/AFNetworking iOS.build/Objects-normal/x86_64/UIProgressView+AFNetworking.o</span><br><span class="line">[  2] /Users/jamy/Library/Developer/Xcode/DerivedData/AFNetworking-cmhenvqhrddnjtcnbkcxlqypctnc/Build/Intermediates.noindex/AFNetworking.build/Debug-iphonesimulator/AFNetworking iOS.build/Objects-normal/x86_64/AFNetworkReachabilityManager.o</span><br><span class="line">[  3] /Users/jamy/Library/Developer/Xcode/DerivedData/AFNetworking-cmhenvqhrddnjtcnbkcxlqypctnc/Build/Intermediates.noindex/AFNetworking.build/Debug-iphonesimulator/AFNetworking iOS.build/Objects-normal/x86_64/UIRefreshControl+AFNetworking.o</span><br><span class="line"></span><br><span class="line">.......</span><br><span class="line"></span><br><span class="line"><span class="comment"># Sections:</span></span><br><span class="line"><span class="comment"># Address  Size      Segment  Section</span></span><br><span class="line">0x000012C0  0x0003ABEC  __TEXT  __text</span><br><span class="line">0x0003BEAC  0x0000033C  __TEXT  __stubs</span><br><span class="line">0x0003C1E8  0x00000574  __TEXT  __stub_helper</span><br><span class="line">0x0003C75C  0x00000F1C  __TEXT  __gcc_except_tab</span><br><span class="line">0x0003D680  0x000000B8  __TEXT  __const</span><br><span class="line">0x0003D738  0x000052A6  __TEXT  __objc_methname</span><br><span class="line">0x000429DE  0x00002DEA  __TEXT  __cstring</span><br><span class="line">0x000457C8  0x00000475  __TEXT  __objc_classname</span><br><span class="line">0x00045C3D  0x0000106C  __TEXT  __objc_methtype</span><br><span class="line">0x00046CAC  0x00000348  __TEXT  __unwind_info</span><br><span class="line">0x00047000  0x00000010  __DATA  __nl_symbol_ptr</span><br><span class="line">0x00047010  0x00000150  __DATA  __got</span><br><span class="line">0x00047160  0x00000450  __DATA  __la_symbol_ptr</span><br><span class="line">0x000475B0  0x00001180  __DATA  __const</span><br><span class="line">0x00048730  0x00001260  __DATA  __cfstring</span><br><span class="line">0x00049990  0x000000E0  __DATA  __objc_classlist</span><br><span class="line">0x00049A70  0x00000010  __DATA  __objc_nlclslist</span><br><span class="line">0x00049A80  0x00000050  __DATA  __objc_catlist</span><br><span class="line">0x00049AD0  0x00000078  __DATA  __objc_protolist</span><br><span class="line">0x00049B48  0x00000008  __DATA  __objc_imageinfo</span><br><span class="line">0x00049B50  0x000078E8  __DATA  __objc_const</span><br><span class="line">0x00051438  0x000014B0  __DATA  __objc_selrefs</span><br><span class="line">0x000528E8  0x00000018  __DATA  __objc_protorefs</span><br><span class="line">0x00052900  0x00000210  __DATA  __objc_classrefs</span><br><span class="line">0x00052B10  0x000000C8  __DATA  __objc_superrefs</span><br><span class="line">0x00052BD8  0x00000450  __DATA  __objc_ivar</span><br><span class="line">0x00053028  0x00000910  __DATA  __objc_data</span><br><span class="line">0x00053938  0x000005F8  __DATA  __data</span><br><span class="line">0x00053F30  0x00000240  __DATA  __bss</span><br><span class="line"></span><br><span class="line">.......</span><br><span class="line"></span><br><span class="line"><span class="comment"># Symbols:</span></span><br><span class="line"><span class="comment"># Address  Size      File  Name</span></span><br><span class="line">0x000012C0  0x00000070  [  1] -[UIProgressView(AFNetworking) af_uploadProgressAnimated]</span><br><span class="line">0x00001330  0x00000090  [  1] -[UIProgressView(AFNetworking) af_setUploadProgressAnimated:]</span><br><span class="line"></span><br><span class="line">....</span><br><span class="line"></span><br><span class="line">0x00002040  0x00000290  [  2] _AFStringFromNetworkReachabilityStatus</span><br><span class="line">0x000022D0  0x000000B0  [  2] +[AFNetworkReachabilityManager sharedManager]</span><br><span class="line">0x00002380  0x00000050  [  2] ___45+[AFNetworkReachabilityManager sharedManager]_block_invoke</span><br><span class="line"></span><br><span class="line">.....</span><br><span class="line"></span><br><span class="line">0x00003560  0x000000D0  [  3] -[UIRefreshControl(AFNetworking) af_notificationObserver]</span><br><span class="line">0x00003630  0x00000080  [  3] -[UIRefreshControl(AFNetworking) setRefreshingWithStateOfTask:]</span><br><span class="line"></span><br><span class="line">......</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>Object files: 编译后的目标文件.o</li>
+<li>Sections：machO对应的各个段，如<strong>TEXT,</strong>DATA,__LINK_EDITD等等。</li>
+<li>Symbols：符号相关信息，第一列是在文件中的偏移位置，第二列是大小，第三列是对应的文件名[1.2.3]代表上面<code>Object files</code>对应的编号。如[1]代表<code>[  1] /Users/jamy/Library/Developer/Xcode/DerivedData/AFNetworking-cmhenvqhrddnjtcnbkcxlqypctnc/Build/Intermediates.noindex/AFNetworking.build/Debug-iphonesimulator/AFNetworking iOS.build/Objects-normal/x86_64/UIProgressView+AFNetworking.o</code>文件。</li>
+</ul>
+<p>每一行的数据都紧跟在上一行后面，如<code>_AFStringFromNetworkReachabilityStatus</code>的文件偏移位置是<code>0x00002040</code>，大小是<code>0x00000290</code>，相加就是下一列<code>0x000022D0</code>。</p>
+<p>我们可以通过统计对应的大小进而知道使用的静态库之类的运行时大小，从而做一些优化。</p>
+<h1 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h1><p><a href="https://developer.apple.com/library/content/technotes/tn2151/_index.html#//apple_ref/doc/uid/DTS40008184-CH1-APPINFO" target="_blank" rel="noopener">Understanding and Analyzing Application Crash Reports</a><br><a href="http://blog.cnbang.net/tech/2296/" target="_blank" rel="noopener">iOS APP可执行文件的组成</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="/images/wechat-reward-image.jpg" alt="jamy_gu WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="/images/alipay-reward-image.jpg" alt="jamy_gu Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/01/08/ios-crashfile-prase/" rel="next" title="ios-crashfile-prase">
+                <i class="fa fa-chevron-left"></i> ios-crashfile-prase
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/01/08/ios-machO/" rel="prev" title="ios-machO">
+                ios-machO <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="jamy_gu" />
+          <p class="site-author-name" itemprop="name">jamy_gu</p>
+           
+              <p class="site-description motion-element" itemprop="description">Stay hungry，Stay foolish！</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">11</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/svenJamy" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/1805553781/profile?topnav=1&wvr=6" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#dsym"><span class="nav-number">1.</span> <span class="nav-text">dsym</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dsym符号集"><span class="nav-number">1.1.</span> <span class="nav-text">dsym符号集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#atos命令解析crash文件"><span class="nav-number">1.2.</span> <span class="nav-text">atos命令解析crash文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#通过symbolicatecrash分析crash文件"><span class="nav-number">1.2.1.</span> <span class="nav-text">通过symbolicatecrash分析crash文件</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#link-map文件"><span class="nav-number">2.</span> <span class="nav-text">link map文件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#XCode开启编译选项Write-Link-Map-File"><span class="nav-number">2.1.</span> <span class="nav-text">XCode开启编译选项Write Link Map File</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#reference"><span class="nav-number">3.</span> <span class="nav-text">reference</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">jamy.gush</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://jamy-gu.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2018/01/08/ios-dsym-linkmap/';
+          this.page.identifier = '2018/01/08/ios-dsym-linkmap/';
+          this.page.title = 'ios-dsym-linkmap';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://jamy-gu.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
